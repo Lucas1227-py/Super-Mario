@@ -2,232 +2,193 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen" />
   <title>Super Mario World</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --red: #e52521;
-      --yellow: #fbd000;
-      --blue: #049cd8;
-      --green: #43b047;
-      --dark: #0a0a0a;
-      --coin: #f7c948;
+      --red: #e52521; --yellow: #fbd000;
+      --blue: #049cd8; --green: #43b047;
+      --dark: #0a0a0a; --coin: #f7c948;
     }
 
-    html, body {
-      width: 100%; height: 100%;
-      background: var(--dark);
-      overflow: hidden;
-      font-family: 'Press Start 2P', monospace;
-    }
+    html, body { width:100%; height:100%; background:var(--dark); overflow:hidden; font-family:'Press Start 2P',monospace; }
 
-    /* ── PIXEL FONT ── */
-    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
-    /* ── LOADING SCREEN ── */
+    /* SPLASH */
     #splash {
-      position: fixed; inset: 0; z-index: 100;
-      background: var(--dark);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 28px;
-      transition: opacity .5s ease;
+      position:fixed; inset:0; z-index:100; background:var(--dark);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px;
+      transition:opacity .5s ease;
     }
-
-    #splash.hide { opacity: 0; pointer-events: none; }
-
-    .logo {
-      text-align: center;
-      line-height: 1.6;
-    }
-
-    .logo .super {
-      font-size: clamp(10px, 3vw, 16px);
-      color: var(--yellow);
-      letter-spacing: .3em;
-      text-shadow: 3px 3px 0 #a07800;
-    }
-
-    .logo .mario {
-      font-size: clamp(22px, 7vw, 52px);
-      color: var(--red);
-      text-shadow: 4px 4px 0 #8b0000, 8px 8px 0 #3a0000;
-      display: block;
-      animation: bounce 1s ease infinite alternate;
-    }
-
-    .logo .world {
-      font-size: clamp(14px, 4vw, 28px);
-      color: var(--blue);
-      text-shadow: 3px 3px 0 #025588;
-    }
-
-    @keyframes bounce {
-      from { transform: translateY(0); }
-      to   { transform: translateY(-8px); }
-    }
-
-    /* Mario pixel sprite */
-    .sprite {
-      image-rendering: pixelated;
-      width: 64px; height: 64px;
-      position: relative;
-    }
-
-    /* Coin row */
-    .coins {
-      display: flex; gap: 12px;
-    }
-    .coin {
-      width: 18px; height: 18px;
-      background: var(--coin);
-      border-radius: 50%;
-      box-shadow: 0 0 8px var(--coin);
-      animation: coinSpin 1s linear infinite;
-    }
-    .coin:nth-child(2) { animation-delay: .15s; }
-    .coin:nth-child(3) { animation-delay: .3s; }
-    .coin:nth-child(4) { animation-delay: .45s; }
-    .coin:nth-child(5) { animation-delay: .6s; }
-
-    @keyframes coinSpin {
-      0%,100% { transform: scaleX(1); }
-      50%      { transform: scaleX(0.1); }
-    }
-
-    /* Start button */
+    #splash.hide { opacity:0; pointer-events:none; }
+    .logo { text-align:center; line-height:1.6; }
+    .logo .super { font-size:clamp(10px,3vw,16px); color:var(--yellow); letter-spacing:.3em; text-shadow:3px 3px 0 #a07800; }
+    .logo .mario { font-size:clamp(22px,7vw,52px); color:var(--red); text-shadow:4px 4px 0 #8b0000,8px 8px 0 #3a0000; display:block; animation:bounce 1s ease infinite alternate; }
+    .logo .world { font-size:clamp(14px,4vw,28px); color:var(--blue); text-shadow:3px 3px 0 #025588; }
+    @keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-8px)} }
+    .sprite { image-rendering:pixelated; width:64px; height:64px; }
+    .coins { display:flex; gap:12px; }
+    .coin { width:18px; height:18px; background:var(--coin); border-radius:50%; box-shadow:0 0 8px var(--coin); animation:coinSpin 1s linear infinite; }
+    .coin:nth-child(2){animation-delay:.15s} .coin:nth-child(3){animation-delay:.3s} .coin:nth-child(4){animation-delay:.45s} .coin:nth-child(5){animation-delay:.6s}
+    @keyframes coinSpin { 0%,100%{transform:scaleX(1)} 50%{transform:scaleX(0.1)} }
     #startBtn {
-      background: var(--green);
-      color: #fff;
-      border: none;
-      font-family: 'Press Start 2P', monospace;
-      font-size: clamp(9px, 2.5vw, 13px);
-      padding: 14px 28px;
-      cursor: pointer;
-      text-shadow: 2px 2px 0 #1a5c1a;
-      box-shadow: 0 6px 0 #1a5c1a, 0 8px 16px rgba(0,0,0,.4);
-      transition: transform .1s, box-shadow .1s;
-      animation: pulse 1.5s ease infinite;
+      background:var(--green); color:#fff; border:none;
+      font-family:'Press Start 2P',monospace; font-size:clamp(9px,2.5vw,13px);
+      padding:14px 28px; cursor:pointer; text-shadow:2px 2px 0 #1a5c1a;
+      box-shadow:0 6px 0 #1a5c1a,0 8px 16px rgba(0,0,0,.4);
+      transition:transform .1s,box-shadow .1s; animation:pulse 1.5s ease infinite;
+    }
+    #startBtn:active { transform:translateY(4px); box-shadow:0 2px 0 #1a5c1a; }
+    @keyframes pulse { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.2)} }
+
+    /* EMULATOR */
+    #emu-wrap { position:fixed; inset:0; display:none; background:#000; }
+    #emu-wrap.active { display:block; }
+    #game-container { width:100%; height:100%; position:relative; }
+
+    /* Esconde os controles nativos do EmulatorJS — vamos usar os nossos */
+    [class*="ejs_gamepad"], [class*="ejs_virtualGamepad"],
+    [class*="ejs_button_container"], [class*="ejs_buttons_"] {
+      display:none !important;
     }
 
-    #startBtn:active {
-      transform: translateY(4px);
-      box-shadow: 0 2px 0 #1a5c1a;
-    }
-
-    @keyframes pulse {
-      0%,100% { filter: brightness(1); }
-      50%      { filter: brightness(1.2); }
-    }
-
-    .hint {
-      font-size: clamp(6px, 1.8vw, 9px);
-      color: #555;
-      text-align: center;
-      line-height: 1.8;
-    }
-
-    /* ── EMULATOR WRAPPER ── */
-    #emu-wrap {
-      position: fixed; inset: 0;
-      display: none;
-      background: #000;
-    }
-
-    #emu-wrap.active { display: block; }
-
-    #game-container {
-      width: 100%; height: 100%;
-      position: relative;
-    }
-
-    /* EmulatorJS fills the container */
-    #game-container canvas,
-    #game-container #emulator {
-      width: 100% !important;
-      height: 100% !important;
-    }
-
-    /* ── PIXEL SCANLINES overlay ── */
+    /* SCANLINES */
     #emu-wrap::after {
-      content: '';
-      position: fixed; inset: 0;
-      pointer-events: none;
-      background: repeating-linear-gradient(
-        transparent 0px,
-        transparent 2px,
-        rgba(0,0,0,.08) 2px,
-        rgba(0,0,0,.08) 4px
-      );
-      z-index: 10;
+      content:''; position:fixed; inset:0; pointer-events:none; z-index:10;
+      background:repeating-linear-gradient(transparent 0px,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px);
     }
 
-    /* ── ROTATE OVERLAY ── */
+    /* ROTATE */
     #rotate-msg {
-      display: none;
-      position: fixed; inset: 0; z-index: 200;
-      background: var(--dark);
-      align-items: center; justify-content: center;
-      flex-direction: column; gap: 20px;
-      text-align: center;
+      display:none; position:fixed; inset:0; z-index:200; background:var(--dark);
+      align-items:center; justify-content:center; flex-direction:column; gap:20px; text-align:center;
+    }
+    #rotate-msg .arrow { font-size:48px; animation:rotateArrow 1.5s ease infinite; }
+    @keyframes rotateArrow { 0%{transform:rotate(0deg)} 50%{transform:rotate(90deg)} 100%{transform:rotate(0deg)} }
+    #rotate-msg p { color:var(--yellow); font-size:clamp(8px,2.5vw,11px); line-height:2; }
+    @media (orientation:portrait) and (max-width:768px) { #rotate-msg{display:flex} }
+
+    /* ══ CUSTOM GAMEPAD ══ */
+    #gamepad {
+      position:fixed; inset:0; z-index:50;
+      pointer-events:none; /* o overlay não bloqueia o canvas — só os botões têm pointer-events */
+      display:none;
+    }
+    #gamepad.active { display:block; }
+
+    /* DPAD */
+    #dpad {
+      position:absolute;
+      bottom: 18px; left: 16px;
+      width: 150px; height: 150px;
+      pointer-events:none;
+    }
+    .dpad-btn {
+      position:absolute;
+      background: rgba(255,255,255,0.13);
+      border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 6px;
+      display:flex; align-items:center; justify-content:center;
+      color:rgba(255,255,255,0.7); font-size:18px;
+      pointer-events:auto;
+      user-select:none; -webkit-user-select:none;
+      touch-action:none;
+      transition: background .08s;
+    }
+    .dpad-btn.pressed { background:rgba(255,255,255,0.35); }
+    #dpad-up    { top:0;   left:50px; width:50px; height:50px; }
+    #dpad-down  { bottom:0; left:50px; width:50px; height:50px; }
+    #dpad-left  { top:50px; left:0;   width:50px; height:50px; }
+    #dpad-right { top:50px; right:0;  width:50px; height:50px; }
+    #dpad-center {
+      position:absolute; top:50px; left:50px; width:50px; height:50px;
+      background:rgba(255,255,255,0.07); border-radius:4px;
     }
 
-    #rotate-msg .arrow {
-      font-size: 48px;
-      animation: rotateArrow 1.5s ease infinite;
+    /* ABXY */
+    #face-btns {
+      position:absolute;
+      bottom: 18px; right: 16px;
+      width:150px; height:150px;
+      pointer-events:none;
     }
+    .face-btn {
+      position:absolute;
+      width:46px; height:46px; border-radius:50%;
+      border:2px solid rgba(255,255,255,0.3);
+      display:flex; align-items:center; justify-content:center;
+      font-size:13px; font-weight:bold;
+      font-family:'Press Start 2P',monospace;
+      pointer-events:auto;
+      user-select:none; -webkit-user-select:none;
+      touch-action:none;
+      transition: filter .08s;
+    }
+    .face-btn.pressed { filter:brightness(1.8); }
+    #btn-b { bottom:0;  left:0;   background:rgba(220,50,50,0.35);   color:#ff8080; border-color:#ff5555; }
+    #btn-a { bottom:0;  right:0;  background:rgba(50,180,50,0.35);   color:#80ff80; border-color:#55ff55; }
+    #btn-y { top:0;     left:0;   background:rgba(80,80,220,0.35);   color:#8888ff; border-color:#5555ff; }
+    #btn-x { top:0;     right:0;  background:rgba(220,180,50,0.35);  color:#ffee80; border-color:#ffdd44; }
 
-    @keyframes rotateArrow {
-      0%   { transform: rotate(0deg); }
-      50%  { transform: rotate(90deg); }
-      100% { transform: rotate(0deg); }
+    /* CENTER BUTTONS (Start, Select, L, R) */
+    #center-btns {
+      position:absolute;
+      bottom:22px; left:50%; transform:translateX(-50%);
+      display:flex; gap:10px; align-items:center;
+      pointer-events:none;
     }
+    .center-btn {
+      background:rgba(255,255,255,0.12);
+      border:2px solid rgba(255,255,255,0.2);
+      border-radius:20px;
+      color:rgba(255,255,255,0.7);
+      font-family:'Press Start 2P',monospace;
+      font-size:8px; padding:7px 10px;
+      pointer-events:auto;
+      user-select:none; -webkit-user-select:none;
+      touch-action:none;
+      transition:background .08s;
+    }
+    .center-btn.pressed { background:rgba(255,255,255,0.35); }
 
-    #rotate-msg p {
-      color: var(--yellow);
-      font-size: clamp(8px, 2.5vw, 11px);
-      line-height: 2;
+    /* L / R shoulder (top corners) */
+    #shoulder-btns {
+      position:absolute;
+      top:10px; left:0; right:0;
+      display:flex; justify-content:space-between;
+      padding:0 16px;
+      pointer-events:none;
     }
-
-    /* Show rotate msg only on portrait mobile */
-    @media (orientation: portrait) and (max-width: 768px) {
-      #rotate-msg { display: flex; }
+    .shoulder-btn {
+      background:rgba(255,255,255,0.12);
+      border:2px solid rgba(255,255,255,0.2);
+      border-radius:8px;
+      color:rgba(255,255,255,0.7);
+      font-family:'Press Start 2P',monospace;
+      font-size:11px; padding:9px 18px;
+      pointer-events:auto;
+      user-select:none; -webkit-user-select:none;
+      touch-action:none;
+      transition:background .08s;
     }
-
-    /* ── FORCE TOUCH CONTROLS VISIBLE ── */
-    /* EmulatorJS às vezes esconde os controles com display:none ou opacity:0 no segundo load */
-    [class*="ejs_"] canvas,
-    [class*="ejs_gamepad"],
-    [class*="ejs_button"],
-    [class*="ejs_virtualGamepad"],
-    [id*="ejs_"] {
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      pointer-events: auto !important;
-    }
-    </style>
+    .shoulder-btn.pressed { background:rgba(255,255,255,0.35); }
+  </style>
 </head>
 <body>
 
-<!-- ── SPLASH ── -->
+<!-- SPLASH -->
 <div id="splash">
   <div class="logo">
     <span class="super">SUPER</span>
     <span class="mario">MARIO</span>
     <span class="world">WORLD</span>
   </div>
-
   <svg class="sprite" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-    <!-- Mario pixel art simplificado -->
     <rect x="5" y="0" width="6" height="2" fill="#e52521"/>
     <rect x="4" y="2" width="8" height="2" fill="#f4a460"/>
     <rect x="4" y="4" width="2" height="2" fill="#1a1a1a"/>
@@ -240,51 +201,148 @@
     <rect x="3" y="13" width="4" height="3" fill="#3b2200"/>
     <rect x="9" y="13" width="4" height="3" fill="#3b2200"/>
   </svg>
-
   <div class="coins">
-    <div class="coin"></div>
-    <div class="coin"></div>
-    <div class="coin"></div>
-    <div class="coin"></div>
-    <div class="coin"></div>
+    <div class="coin"></div><div class="coin"></div><div class="coin"></div>
+    <div class="coin"></div><div class="coin"></div>
   </div>
-
   <button id="startBtn" onclick="startGame()">▶ JOGAR AGORA</button>
-
-  <p class="hint">
-    Coloque a URL da sua ROM abaixo<br/>
-    antes de hospedar o arquivo
-  </p>
 </div>
 
-<!-- ── ROTATE MESSAGE ── -->
+<!-- ROTATE -->
 <div id="rotate-msg">
   <div class="arrow">↻</div>
   <p>GIRE O CELULAR<br/>PARA LANDSCAPE<br/>PARA JOGAR</p>
 </div>
 
-<!-- ── EMULATOR ── -->
+<!-- EMULATOR -->
 <div id="emu-wrap">
   <div id="game-container"></div>
 </div>
 
-<script>
-  // ══════════════════════════════════════════
-  //  ⚠️  COLOQUE A URL DA SUA ROM AQUI ⚠️
-  // ══════════════════════════════════════════
-  const ROM_URL = "./Super Mario World (USA).sfc";
-  // ══════════════════════════════════════════
+<!-- CUSTOM GAMEPAD -->
+<div id="gamepad">
+  <!-- Shoulder buttons top -->
+  <div id="shoulder-btns">
+    <button class="shoulder-btn" id="btn-l">L</button>
+    <button class="shoulder-btn" id="btn-r">R</button>
+  </div>
 
+  <!-- D-Pad -->
+  <div id="dpad">
+    <div id="dpad-center"></div>
+    <div class="dpad-btn" id="dpad-up">▲</div>
+    <div class="dpad-btn" id="dpad-down">▼</div>
+    <div class="dpad-btn" id="dpad-left">◀</div>
+    <div class="dpad-btn" id="dpad-right">▶</div>
+  </div>
+
+  <!-- Face buttons -->
+  <div id="face-btns">
+    <div class="face-btn" id="btn-y">Y</div>
+    <div class="face-btn" id="btn-x">X</div>
+    <div class="face-btn" id="btn-b">B</div>
+    <div class="face-btn" id="btn-a">A</div>
+  </div>
+
+  <!-- Center: Select + Start -->
+  <div id="center-btns">
+    <button class="center-btn" id="btn-select">SEL</button>
+    <button class="center-btn" id="btn-start">START</button>
+  </div>
+</div>
+
+<script>
+  const ROM_URL = "./Super Mario World (USA).sfc";
+
+  // ── Mapeamento RetroArch/EmulatorJS para SNES ──
+  // índices conforme EJS_GamepadMap
+  const KEY = {
+    UP: 4, DOWN: 5, LEFT: 6, RIGHT: 7,
+    A: 8, B: 0, X: 1, Y: 9,
+    L: 10, R: 11,
+    SELECT: 2, START: 3
+  };
+
+  // Elementos do gamepad → tecla mapeada
+  const BTN_MAP = {
+    'dpad-up':    KEY.UP,
+    'dpad-down':  KEY.DOWN,
+    'dpad-left':  KEY.LEFT,
+    'dpad-right': KEY.RIGHT,
+    'btn-a':      KEY.A,
+    'btn-b':      KEY.B,
+    'btn-x':      KEY.X,
+    'btn-y':      KEY.Y,
+    'btn-l':      KEY.L,
+    'btn-r':      KEY.R,
+    'btn-select': KEY.SELECT,
+    'btn-start':  KEY.START,
+  };
+
+  function pressBtn(id, down) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (down) el.classList.add('pressed');
+    else el.classList.remove('pressed');
+
+    const keyIndex = BTN_MAP[id];
+    if (keyIndex === undefined) return;
+
+    // Injeta o evento no EmulatorJS via gamepad API virtual
+    try {
+      if (window.EJS_emulator && window.EJS_emulator.gameManager) {
+        const gm = window.EJS_emulator.gameManager;
+        if (gm.buttonDown && down)  gm.buttonDown(0, keyIndex);
+        if (gm.buttonUp   && !down) gm.buttonUp(0, keyIndex);
+      }
+    } catch(e) {}
+
+    // Fallback: dispara KeyboardEvent mapeado para RetroArch
+    const keyMap = {
+      [KEY.UP]:     'ArrowUp',    [KEY.DOWN]:  'ArrowDown',
+      [KEY.LEFT]:   'ArrowLeft',  [KEY.RIGHT]: 'ArrowRight',
+      [KEY.A]:      'x',          [KEY.B]:     'z',
+      [KEY.X]:      's',          [KEY.Y]:     'a',
+      [KEY.L]:      'q',          [KEY.R]:     'w',
+      [KEY.SELECT]: 'Backspace',  [KEY.START]: 'Enter',
+    };
+    const k = keyMap[keyIndex];
+    if (k) {
+      const evt = new KeyboardEvent(down ? 'keydown' : 'keyup', {
+        key: k, code: k, bubbles: true, cancelable: true
+      });
+      document.dispatchEvent(evt);
+      // Também tenta no canvas do emulador
+      const canvas = document.querySelector('#game-container canvas');
+      if (canvas) canvas.dispatchEvent(evt);
+    }
+  }
+
+  function bindBtn(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchstart', e => { e.preventDefault(); pressBtn(id, true);  }, {passive:false});
+    el.addEventListener('touchend',   e => { e.preventDefault(); pressBtn(id, false); }, {passive:false});
+    el.addEventListener('touchcancel',e => { e.preventDefault(); pressBtn(id, false); }, {passive:false});
+    // Mouse fallback (desktop test)
+    el.addEventListener('mousedown', e => { e.preventDefault(); pressBtn(id, true);  });
+    el.addEventListener('mouseup',   e => { e.preventDefault(); pressBtn(id, false); });
+    el.addEventListener('mouseleave',e => { e.preventDefault(); pressBtn(id, false); });
+  }
+
+  function initGamepad() {
+    Object.keys(BTN_MAP).forEach(bindBtn);
+    document.getElementById('gamepad').classList.add('active');
+  }
+
+  // ── Emulator ──
   let emulatorLoaded = false;
 
   function startGame() {
     const el = document.documentElement;
     const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
     if (req) req.call(el).catch(() => {});
-
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(() => {});
-    }
+    if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
 
     const splash = document.getElementById('splash');
     splash.classList.add('hide');
@@ -292,75 +350,45 @@
 
     document.getElementById('emu-wrap').classList.add('active');
     mountEmulator();
+    initGamepad();
   }
 
   function mountEmulator() {
-    // Limpa o estado salvo de "controles ocultos" do EmulatorJS no localStorage
-    // Esse é o motivo dos controles sumirem na segunda abertura:
-    // o EmulatorJS salva a visibilidade do gamepad por jogo e restaura na próxima vez
-    try {
-      Object.keys(localStorage)
-        .filter(k => k.includes('gamepad') || k.includes('Gamepad') || k.includes('virtualpad') || k.includes('EJS'))
-        .forEach(k => {
-          try {
-            const val = JSON.parse(localStorage.getItem(k));
-            // Se tiver uma chave de visibilidade do gamepad, força true
-            if (val && typeof val === 'object' && 'gamepad' in val) {
-              val.gamepad = true;
-              localStorage.setItem(k, JSON.stringify(val));
-            }
-          } catch(e) {}
-        });
-    } catch(e) {}
-    // Limpa qualquer instância anterior completamente
     const wrap = document.getElementById('game-container');
     wrap.innerHTML = '';
-
-    // Remove scripts anteriores do EmulatorJS
-    document.querySelectorAll('script[src*="emulatorjs"], script[src*="loader.js"]').forEach(s => s.remove());
-
-    // Reseta todas as variáveis EJS_*
+    document.querySelectorAll('script[src*="loader.js"]').forEach(s => s.remove());
     Object.keys(window).filter(k => k.startsWith('EJS_') || k === 'EJS_emulator').forEach(k => {
       try { delete window[k]; } catch(e) {}
     });
 
-    // Reconfigura tudo do zero
-    window.EJS_player            = '#game-container';
-    window.EJS_core              = 'snes';
-    window.EJS_gameUrl           = ROM_URL;
-    window.EJS_pathtodata        = 'https://cdn.emulatorjs.org/stable/data/';
-    window.EJS_startOnLoaded     = true;
-    window.EJS_fullscreenOnLoaded = true;
-    window.EJS_color             = '#e52521';
-    window.EJS_backgroundColor  = '#000000';
-    window.EJS_language          = 'pt-BR';
-    window.EJS_gameID            = 'smw';
-    window.EJS_VirtualGamepad    = true;  // força gamepad visível sempre
+    window.EJS_player           = '#game-container';
+    window.EJS_core             = 'snes';
+    window.EJS_gameUrl          = ROM_URL;
+    window.EJS_pathtodata       = 'https://cdn.emulatorjs.org/stable/data/';
+    window.EJS_startOnLoaded    = true;
+    window.EJS_color            = '#e52521';
+    window.EJS_backgroundColor = '#000000';
+    window.EJS_language         = 'pt-BR';
+    window.EJS_gameID           = 'smw';
+    // Desativa os controles nativos do EmulatorJS — usamos os nossos
+    window.EJS_VirtualGamepad   = false;
     window.EJS_Buttons = {
-      playPause: true, restart: true, mute: true,
-      settings: true, fullscreen: true,
-      saveState: true, loadState: true,
-      screenRecord: false, gamepad: true,
-      cheat: false, volume: true,
-      saveSavFiles: true, loadSavFiles: true,
-      quickSave: true, quickLoad: true,
+      playPause:false, restart:false, mute:true,
+      settings:false, fullscreen:false,
+      saveState:true, loadState:true,
+      screenRecord:false, gamepad:false,
+      cheat:false, volume:true,
+      saveSavFiles:true, loadSavFiles:true,
+      quickSave:true, quickLoad:true,
     };
 
-    // Injeta loader fresh
     const script = document.createElement('script');
-    script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js?t=' + Date.now();
+    script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js?v=' + Date.now();
     document.body.appendChild(script);
     emulatorLoaded = true;
   }
 
-  // Quando a aba volta ao foco, remonta o emulador do zero
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && emulatorLoaded) {
-      setTimeout(mountEmulator, 100);
-    }
-  });
-
-  // Autoplay via NFC
+  // NFC autoplay
   window.addEventListener('load', () => {
     if (new URLSearchParams(location.search).get('autoplay') === '1') {
       setTimeout(() => document.getElementById('startBtn').click(), 300);
