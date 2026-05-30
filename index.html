@@ -312,10 +312,59 @@
       quickLoad: true,
     };
 
+    // Callback quando o jogo iniciar — dispara o fix do joystick
+    window.EJS_onGameStart = () => fixGamepad();
+
     // Injeta o script do EmulatorJS
     const script = document.createElement('script');
     script.src = 'https://cdn.emulatorjs.org/latest/data/loader.js';
     document.body.appendChild(script);
+  }
+
+  function fixGamepad() {
+    const forceResize = () => window.dispatchEvent(new Event('resize'));
+
+    // Dispara várias vezes — EmulatorJS recalcula os controles no resize
+    forceResize();
+    setTimeout(forceResize, 200);
+    setTimeout(forceResize, 600);
+    setTimeout(forceResize, 1200);
+
+    // Observa se o joystick some depois (ex: ao sair/entrar fullscreen, trocar guia)
+    const observer = new MutationObserver(() => {
+      const gamepad = document.querySelector('[class*="gamepad"], [class*="Gamepad"], [class*="touch"]');
+      if (gamepad) {
+        const s = window.getComputedStyle(gamepad);
+        if (s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity) === 0) {
+          gamepad.style.cssText += 'display:block!important;visibility:visible!important;opacity:1!important;';
+          forceResize();
+        }
+      }
+    });
+
+    observer.observe(document.getElementById('game-container'), {
+      childList: true, subtree: true,
+      attributes: true, attributeFilter: ['style', 'class']
+    });
+
+    // Re-aplica ao trocar orientação
+    window.addEventListener('orientationchange', () => {
+      setTimeout(forceResize, 300);
+      setTimeout(forceResize, 800);
+    });
+
+    // Re-aplica ao entrar/sair do fullscreen
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach(evt => {
+      document.addEventListener(evt, () => setTimeout(forceResize, 300));
+    });
+
+    // Re-aplica quando a aba volta ao foco (trocar guia e voltar)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        setTimeout(forceResize, 200);
+        setTimeout(forceResize, 600);
+      }
+    });
   }
 
   // Auto-start se vier de NFC (sem interação prévia necessária em alguns browsers)
