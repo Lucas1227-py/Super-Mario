@@ -288,33 +288,69 @@
     const keyIndex = BTN_MAP[id];
     if (keyIndex === undefined) return;
 
-    // Injeta o evento no EmulatorJS via gamepad API virtual
+    // Usa APENAS a API interna do EmulatorJS — sem KeyboardEvent
+    // (KeyboardEvent dispara os atalhos do RetroArch como fast-forward, slow-motion, etc.)
     try {
-      if (window.EJS_emulator && window.EJS_emulator.gameManager) {
-        const gm = window.EJS_emulator.gameManager;
-        if (gm.buttonDown && down)  gm.buttonDown(0, keyIndex);
-        if (gm.buttonUp   && !down) gm.buttonUp(0, keyIndex);
+      const gm = window.EJS_emulator && window.EJS_emulator.gameManager;
+      if (gm) {
+        if (down && gm.buttonDown) { gm.buttonDown(0, keyIndex); return; }
+        if (!down && gm.buttonUp)  { gm.buttonUp(0, keyIndex);   return; }
       }
     } catch(e) {}
 
-    // Fallback: dispara KeyboardEvent mapeado para RetroArch
-    const keyMap = {
-      [KEY.UP]:     'ArrowUp',    [KEY.DOWN]:  'ArrowDown',
-      [KEY.LEFT]:   'ArrowLeft',  [KEY.RIGHT]: 'ArrowRight',
-      [KEY.A]:      'x',          [KEY.B]:     'z',
-      [KEY.X]:      's',          [KEY.Y]:     'a',
-      [KEY.L]:      'q',          [KEY.R]:     'w',
-      [KEY.SELECT]: 'Backspace',  [KEY.START]: 'Enter',
-    };
-    const k = keyMap[keyIndex];
-    if (k) {
-      const evt = new KeyboardEvent(down ? 'keydown' : 'keyup', {
-        key: k, code: k, bubbles: true, cancelable: true
-      });
-      document.dispatchEvent(evt);
-      // Também tenta no canvas do emulador
-      const canvas = document.querySelector('#game-container canvas');
-      if (canvas) canvas.dispatchEvent(evt);
+    // Fallback via gamepad virtual da Web Gamepad API
+    // Simula um gamepad no slot 0 sem usar teclas de teclado
+    injectVirtualGamepad(keyIndex, down);
+  }
+
+  // ── Virtual Gamepad API ──
+  // Simula um gamepad real no browser para o EmulatorJS ler,
+  // sem acionar nenhum atalho de teclado do RetroArch
+  const virtualPad = {
+    id: 'Virtual SNES Pad (Custom)',
+    index: 0,
+    connected: true,
+    timestamp: 0,
+    mapping: 'standard',
+    axes: [0, 0, 0, 0],
+    buttons: Array.from({length: 17}, () => ({ pressed: false, value: 0 })),
+  };
+
+  // Mapeia nossos índices EJS → índices standard Gamepad API
+  const EJS_TO_GAMEPAD = {
+    [KEY.B]:      0,  // B → button 0 (A no standard)
+    [KEY.A]:      1,  // A → button 1 (B no standard)
+    [KEY.Y]:      2,  // Y → button 2 (X no standard)
+    [KEY.X]:      3,  // X → button 3 (Y no standard)
+    [KEY.L]:      4,  // L → button 4
+    [KEY.R]:      5,  // R → button 5
+    [KEY.SELECT]: 8,  // Select → button 8
+    [KEY.START]:  9,  // Start → button 9
+    [KEY.UP]:    12,  // Up → button 12
+    [KEY.DOWN]:  13,  // Down → button 13
+    [KEY.LEFT]:  14,  // Left → button 14
+    [KEY.RIGHT]: 15,  // Right → button 15
+  };
+
+  let gamepadInjected = false;
+  function injectVirtualGamepad(keyIndex, down) {
+    const gpIdx = EJS_TO_GAMEPAD[keyIndex];
+    if (gpIdx === undefined) return;
+
+    virtualPad.buttons[gpIdx] = { pressed: down, value: down ? 1 : 0 };
+    virtualPad.timestamp = performance.now();
+
+    if (!gamepadInjected) {
+      // Sobrescreve navigator.getGamepads para retornar nosso pad virtual
+      const orig = navigator.getGamepads.bind(navigator);
+      navigator.getGamepads = () => {
+        const pads = Array.from(orig());
+        pads[0] = virtualPad;
+        return pads;
+      };
+      // Dispara gamepadconnected para o EmulatorJS registrar o pad
+      window.dispatchEvent(new GamepadEvent('gamepadconnected', { gamepad: virtualPad }));
+      gamepadInjected = true;
     }
   }
 
