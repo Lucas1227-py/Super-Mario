@@ -1,17 +1,28 @@
 <html>
     <head>
-        <!--HTML file auto generated using EmulatorJS codehelper-->
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <meta name="theme-color" content="#1e1e1e">
+
         <style>
-            body, html {
+            html, body {
                 margin: 0;
                 padding: 0;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background: #1e1e1e;
+            }
+
+            #game {
+                width: 100%;
+                height: 100%;
             }
         </style>
     </head>
+
     <body>
-        <div style="width:100%;height:100%;max-width:100%">
-            <div id="game"></div>
-        </div>
+        <div id="game"></div>
+
         <script>
             EJS_player = "#game";
             EJS_core = "snes";
@@ -21,6 +32,26 @@
             EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
             EJS_gameUrl = "Super Mario World (USA).sfc";
         </script>
+
+        <script>
+            async function enterImmersiveMode() {
+                try {
+                    if (!document.fullscreenElement) {
+                        await document.documentElement.requestFullscreen();
+                    }
+
+                    if (screen.orientation) {
+                        await screen.orientation.lock("landscape");
+                    }
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+
+            document.addEventListener("click", enterImmersiveMode, { once: true });
+            document.addEventListener("touchstart", enterImmersiveMode, { once: true });
+        </script>
+
         <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
     </body>
 </html>
