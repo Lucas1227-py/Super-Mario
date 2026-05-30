@@ -1,27 +1,332 @@
-<html>
-    <head>
-        <!--HTML file auto generated using EmulatorJS codehelper-->
-        <style>
-            body, html {
-                margin: 0;
-                padding: 0;
-            }
-        </style>
-    </head>
-    <body>
-        <div style="width:100%;height:100%;max-width:100%">
-            <div id="game"></div>
-        </div>
-        <script>
-            EJS_player = "#game";
-            EJS_core = "snes";
-            EJS_gameName = "Super Mario World";
-            EJS_color = "#1e1e1e";
-            EJS_startOnLoaded = true;
-            EJS_fullscreenOnLoaded = true
-            EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
-            EJS_gameUrl = "Super Mario World (USA).sfc";
-        </script>
-        <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
-    </body>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen" />
+  <title>Super Mario World</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red: #e52521;
+      --yellow: #fbd000;
+      --blue: #049cd8;
+      --green: #43b047;
+      --dark: #0a0a0a;
+      --coin: #f7c948;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--dark);
+      overflow: hidden;
+      font-family: 'Press Start 2P', monospace;
+    }
+
+    /* ── PIXEL FONT ── */
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+    /* ── LOADING SCREEN ── */
+    #splash {
+      position: fixed; inset: 0; z-index: 100;
+      background: var(--dark);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 28px;
+      transition: opacity .5s ease;
+    }
+
+    #splash.hide { opacity: 0; pointer-events: none; }
+
+    .logo {
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .logo .super {
+      font-size: clamp(10px, 3vw, 16px);
+      color: var(--yellow);
+      letter-spacing: .3em;
+      text-shadow: 3px 3px 0 #a07800;
+    }
+
+    .logo .mario {
+      font-size: clamp(22px, 7vw, 52px);
+      color: var(--red);
+      text-shadow: 4px 4px 0 #8b0000, 8px 8px 0 #3a0000;
+      display: block;
+      animation: bounce 1s ease infinite alternate;
+    }
+
+    .logo .world {
+      font-size: clamp(14px, 4vw, 28px);
+      color: var(--blue);
+      text-shadow: 3px 3px 0 #025588;
+    }
+
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to   { transform: translateY(-8px); }
+    }
+
+    /* Mario pixel sprite */
+    .sprite {
+      image-rendering: pixelated;
+      width: 64px; height: 64px;
+      position: relative;
+    }
+
+    /* Coin row */
+    .coins {
+      display: flex; gap: 12px;
+    }
+    .coin {
+      width: 18px; height: 18px;
+      background: var(--coin);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--coin);
+      animation: coinSpin 1s linear infinite;
+    }
+    .coin:nth-child(2) { animation-delay: .15s; }
+    .coin:nth-child(3) { animation-delay: .3s; }
+    .coin:nth-child(4) { animation-delay: .45s; }
+    .coin:nth-child(5) { animation-delay: .6s; }
+
+    @keyframes coinSpin {
+      0%,100% { transform: scaleX(1); }
+      50%      { transform: scaleX(0.1); }
+    }
+
+    /* Start button */
+    #startBtn {
+      background: var(--green);
+      color: #fff;
+      border: none;
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(9px, 2.5vw, 13px);
+      padding: 14px 28px;
+      cursor: pointer;
+      text-shadow: 2px 2px 0 #1a5c1a;
+      box-shadow: 0 6px 0 #1a5c1a, 0 8px 16px rgba(0,0,0,.4);
+      transition: transform .1s, box-shadow .1s;
+      animation: pulse 1.5s ease infinite;
+    }
+
+    #startBtn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #1a5c1a;
+    }
+
+    @keyframes pulse {
+      0%,100% { filter: brightness(1); }
+      50%      { filter: brightness(1.2); }
+    }
+
+    .hint {
+      font-size: clamp(6px, 1.8vw, 9px);
+      color: #555;
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    /* ── EMULATOR WRAPPER ── */
+    #emu-wrap {
+      position: fixed; inset: 0;
+      display: none;
+      background: #000;
+    }
+
+    #emu-wrap.active { display: block; }
+
+    #game-container {
+      width: 100%; height: 100%;
+      position: relative;
+    }
+
+    /* EmulatorJS fills the container */
+    #game-container canvas,
+    #game-container #emulator {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ── PIXEL SCANLINES overlay ── */
+    #emu-wrap::after {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        transparent 0px,
+        transparent 2px,
+        rgba(0,0,0,.08) 2px,
+        rgba(0,0,0,.08) 4px
+      );
+      z-index: 10;
+    }
+
+    /* ── ROTATE OVERLAY ── */
+    #rotate-msg {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      background: var(--dark);
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 20px;
+      text-align: center;
+    }
+
+    #rotate-msg .arrow {
+      font-size: 48px;
+      animation: rotateArrow 1.5s ease infinite;
+    }
+
+    @keyframes rotateArrow {
+      0%   { transform: rotate(0deg); }
+      50%  { transform: rotate(90deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    #rotate-msg p {
+      color: var(--yellow);
+      font-size: clamp(8px, 2.5vw, 11px);
+      line-height: 2;
+    }
+
+    /* Show rotate msg only on portrait mobile */
+    @media (orientation: portrait) and (max-width: 768px) {
+      #rotate-msg { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── SPLASH ── -->
+<div id="splash">
+  <div class="logo">
+    <span class="super">SUPER</span>
+    <span class="mario">MARIO</span>
+    <span class="world">WORLD</span>
+  </div>
+
+  <svg class="sprite" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <!-- Mario pixel art simplificado -->
+    <rect x="5" y="0" width="6" height="2" fill="#e52521"/>
+    <rect x="4" y="2" width="8" height="2" fill="#f4a460"/>
+    <rect x="4" y="4" width="2" height="2" fill="#1a1a1a"/>
+    <rect x="7" y="4" width="3" height="2" fill="#1a1a1a"/>
+    <rect x="3" y="6" width="10" height="3" fill="#e52521"/>
+    <rect x="3" y="6" width="4" height="2" fill="#f4a460"/>
+    <rect x="5" y="9" width="6" height="2" fill="#f4a460"/>
+    <rect x="4" y="11" width="3" height="2" fill="#3b2200"/>
+    <rect x="9" y="11" width="3" height="2" fill="#3b2200"/>
+    <rect x="3" y="13" width="4" height="3" fill="#3b2200"/>
+    <rect x="9" y="13" width="4" height="3" fill="#3b2200"/>
+  </svg>
+
+  <div class="coins">
+    <div class="coin"></div>
+    <div class="coin"></div>
+    <div class="coin"></div>
+    <div class="coin"></div>
+    <div class="coin"></div>
+  </div>
+
+  <button id="startBtn" onclick="startGame()">▶ JOGAR AGORA</button>
+
+  <p class="hint">
+    Coloque a URL da sua ROM abaixo<br/>
+    antes de hospedar o arquivo
+  </p>
+</div>
+
+<!-- ── ROTATE MESSAGE ── -->
+<div id="rotate-msg">
+  <div class="arrow">↻</div>
+  <p>GIRE O CELULAR<br/>PARA LANDSCAPE<br/>PARA JOGAR</p>
+</div>
+
+<!-- ── EMULATOR ── -->
+<div id="emu-wrap">
+  <div id="game-container"></div>
+</div>
+
+<script>
+  // ══════════════════════════════════════════
+  //  ⚠️  COLOQUE A URL DA SUA ROM AQUI ⚠️
+  // ══════════════════════════════════════════
+  const ROM_URL = "./Super Mario World (USA).sfc";
+  // ══════════════════════════════════════════
+
+  function startGame() {
+    // Pede fullscreen
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) req.call(el).catch(() => {});
+
+    // Trava orientação landscape (onde suportado)
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(() => {});
+    }
+
+    // Esconde splash
+    const splash = document.getElementById('splash');
+    splash.classList.add('hide');
+    setTimeout(() => splash.remove(), 600);
+
+    // Mostra emulador
+    document.getElementById('emu-wrap').classList.add('active');
+
+    // Carrega EmulatorJS dinamicamente
+    loadEmulatorJS();
+  }
+
+  function loadEmulatorJS() {
+    // Config do EmulatorJS
+    window.EJS_player        = '#game-container';
+    window.EJS_core          = 'snes';
+    window.EJS_gameUrl       = ROM_URL;
+    window.EJS_pathtodata    = 'https://cdn.emulatorjs.org/latest/data/';
+    window.EJS_startOnLoaded = true;
+    window.EJS_fullscreenOnLoaded = true;
+    window.EJS_color         = '#e52521';
+    window.EJS_backgroundColor = '#000000';
+    window.EJS_language      = 'pt-BR';
+    window.EJS_gameID        = 'smw';
+    window.EJS_Buttons = {
+      playPause: true,
+      restart: true,
+      mute: true,
+      settings: true,
+      fullscreen: true,
+      saveState: true,
+      loadState: true,
+      screenRecord: false,
+      gamepad: true,
+      cheat: false,
+      volume: true,
+      saveSavFiles: true,
+      loadSavFiles: true,
+      quickSave: true,
+      quickLoad: true,
+    };
+
+    // Injeta o script do EmulatorJS
+    const script = document.createElement('script');
+    script.src = 'https://cdn.emulatorjs.org/latest/data/loader.js';
+    document.body.appendChild(script);
+  }
+
+  // Auto-start se vier de NFC (sem interação prévia necessária em alguns browsers)
+  // Alguns browsers bloqueiam autoplay sem gesto — o botão garante compatibilidade
+  window.addEventListener('load', () => {
+    // Se vier via NFC tag com ?autoplay=1, tenta iniciar direto
+    if (new URLSearchParams(location.search).get('autoplay') === '1') {
+      // Pequeno delay para o browser processar o gesto da NFC
+      setTimeout(() => document.getElementById('startBtn').click(), 300);
+    }
+  });
+</script>
+</body>
 </html>
