@@ -149,74 +149,33 @@
   // Estado dos botões pressionados
   const pressed = {};
 
+  let cachedGM = null;
+
+  // Tenta cachear o gameManager assim que o jogo inicia
+  window.EJS_onGameStart = function() {
+    try {
+      cachedGM = window.EJS_emulator && window.EJS_emulator.gameManager;
+      console.log('[SMW] gameManager pronto:', !!cachedGM, '| simulateInput:', !!(cachedGM && cachedGM.simulateInput));
+    } catch(e) { console.warn('[SMW] EJS_onGameStart erro:', e); }
+  };
+
   function sendBtn(name, down) {
     if (!BTN.hasOwnProperty(name)) return;
     const idx = BTN[name];
-    pressed[name] = down;
 
-    try {
-      // Tenta a API interna do EmulatorJS
-      const emu = window.EJS_emulator;
-      if (emu) {
-        // Versões recentes expõem simulateInput
-        if (emu.simulateInput) { emu.simulateInput(0, idx, down ? 1 : 0); return; }
-        // gameManager direto
-        const gm = emu.gameManager;
-        if (gm) {
-          if (down  && gm.buttonDown) { gm.buttonDown(0, idx); return; }
-          if (!down && gm.buttonUp)   { gm.buttonUp(0, idx);   return; }
-          // Fallback setInput
-          if (gm.setInput) { gm.setInput(0, idx, down ? 1 : 0); return; }
-        }
-      }
-    } catch(e) {}
-
-    // ── Fallback: Web Gamepad API spoofing ──
-    // Mantém um objeto de gamepad falso e sobrescreve navigator.getGamepads
-    spoofGamepad(idx, down);
-  }
-
-  // Gamepad virtual — axes e buttons no formato da Gamepad API
-  const vButtons = Array.from({length:20}, () => Object.defineProperty({}, 'pressed', {
-    get() { return this._p||false; }, set(v){ this._p=v; }, enumerable:true, configurable:true
-  }));
-  vButtons.forEach(b => { b.value = 0; });
-
-  // Mapa índice RetroArch → índice Gamepad API standard
-  const RA_TO_STD = { 0:0, 9:2, 2:8, 3:9, 4:12, 5:13, 6:14, 7:15, 8:1, 1:3, 10:4, 11:5 };
-
-  let spoofInstalled = false;
-  const vGamepad = {
-    axes:[0,0,0,0], buttons:vButtons,
-    connected:true, id:'SNES Pad', index:0,
-    mapping:'standard', timestamp:0
-  };
-
-  function spoofGamepad(raIdx, down) {
-    const stdIdx = RA_TO_STD[raIdx];
-    if (stdIdx === undefined) return;
-    vButtons[stdIdx]._p = down;
-    vButtons[stdIdx].value = down ? 1 : 0;
-    vGamepad.timestamp = performance.now();
-
-    if (!spoofInstalled) {
-      const origGet = navigator.getGamepads.bind(navigator);
-      Object.defineProperty(navigator, 'getGamepads', {
-        value: function() {
-          const pads = Array.from(origGet());
-          pads[0] = vGamepad;
-          return pads;
-        },
-        writable: true, configurable: true
-      });
-      spoofInstalled = true;
-      // Avisa o EmulatorJS que um gamepad conectou
-      try {
-        const e = new Event('gamepadconnected');
-        e.gamepad = vGamepad;
-        window.dispatchEvent(e);
-      } catch(_) {}
+    // Tenta pegar gameManager se ainda não tiver cacheado
+    if (!cachedGM) {
+      try { cachedGM = window.EJS_emulator && window.EJS_emulator.gameManager; } catch(e) {}
     }
+
+    if (cachedGM && cachedGM.simulateInput) {
+      try {
+        cachedGM.simulateInput(0, idx, down ? 1 : 0);
+        return;
+      } catch(e) { console.warn('[SMW] simulateInput erro:', e); cachedGM = null; }
+    }
+
+    console.warn('[SMW] gameManager indisponível para botão:', name, idx);
   }
 
   // ── Bind touch/mouse em todos os botões ──
