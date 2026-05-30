@@ -2,6 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -198,7 +201,20 @@
     @media (orientation: portrait) and (max-width: 768px) {
       #rotate-msg { display: flex; }
     }
-  </style>
+
+    /* ── FORCE TOUCH CONTROLS VISIBLE ── */
+    /* EmulatorJS às vezes esconde os controles com display:none ou opacity:0 no segundo load */
+    [class*="ejs_"] canvas,
+    [class*="ejs_gamepad"],
+    [class*="ejs_button"],
+    [class*="ejs_virtualGamepad"],
+    [id*="ejs_"] {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    </style>
 </head>
 <body>
 
@@ -259,120 +275,94 @@
   const ROM_URL = "./Super Mario World (USA).sfc";
   // ══════════════════════════════════════════
 
+  let emulatorLoaded = false;
+
   function startGame() {
-    // Pede fullscreen
     const el = document.documentElement;
     const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
     if (req) req.call(el).catch(() => {});
 
-    // Trava orientação landscape (onde suportado)
     if (screen.orientation && screen.orientation.lock) {
       screen.orientation.lock('landscape').catch(() => {});
     }
 
-    // Esconde splash
     const splash = document.getElementById('splash');
     splash.classList.add('hide');
     setTimeout(() => splash.remove(), 600);
 
-    // Mostra emulador
     document.getElementById('emu-wrap').classList.add('active');
-
-    // Carrega EmulatorJS dinamicamente
-    loadEmulatorJS();
+    mountEmulator();
   }
 
-  function loadEmulatorJS() {
-    // Config do EmulatorJS
-    window.EJS_player        = '#game-container';
-    window.EJS_core          = 'snes';
-    window.EJS_gameUrl       = ROM_URL;
-    window.EJS_pathtodata    = 'https://cdn.emulatorjs.org/latest/data/';
-    window.EJS_startOnLoaded = true;
+  function mountEmulator() {
+    // Limpa o estado salvo de "controles ocultos" do EmulatorJS no localStorage
+    // Esse é o motivo dos controles sumirem na segunda abertura:
+    // o EmulatorJS salva a visibilidade do gamepad por jogo e restaura na próxima vez
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.includes('gamepad') || k.includes('Gamepad') || k.includes('virtualpad') || k.includes('EJS'))
+        .forEach(k => {
+          try {
+            const val = JSON.parse(localStorage.getItem(k));
+            // Se tiver uma chave de visibilidade do gamepad, força true
+            if (val && typeof val === 'object' && 'gamepad' in val) {
+              val.gamepad = true;
+              localStorage.setItem(k, JSON.stringify(val));
+            }
+          } catch(e) {}
+        });
+    } catch(e) {}
+    // Limpa qualquer instância anterior completamente
+    const wrap = document.getElementById('game-container');
+    wrap.innerHTML = '';
+
+    // Remove scripts anteriores do EmulatorJS
+    document.querySelectorAll('script[src*="emulatorjs"], script[src*="loader.js"]').forEach(s => s.remove());
+
+    // Reseta todas as variáveis EJS_*
+    Object.keys(window).filter(k => k.startsWith('EJS_') || k === 'EJS_emulator').forEach(k => {
+      try { delete window[k]; } catch(e) {}
+    });
+
+    // Reconfigura tudo do zero
+    window.EJS_player            = '#game-container';
+    window.EJS_core              = 'snes';
+    window.EJS_gameUrl           = ROM_URL;
+    window.EJS_pathtodata        = 'https://cdn.emulatorjs.org/stable/data/';
+    window.EJS_startOnLoaded     = true;
     window.EJS_fullscreenOnLoaded = true;
-    window.EJS_color         = '#e52521';
-    window.EJS_backgroundColor = '#000000';
-    window.EJS_language      = 'pt-BR';
-    window.EJS_gameID        = 'smw';
+    window.EJS_color             = '#e52521';
+    window.EJS_backgroundColor  = '#000000';
+    window.EJS_language          = 'pt-BR';
+    window.EJS_gameID            = 'smw';
+    window.EJS_VirtualGamepad    = true;  // força gamepad visível sempre
     window.EJS_Buttons = {
-      playPause: true,
-      restart: true,
-      mute: true,
-      settings: true,
-      fullscreen: true,
-      saveState: true,
-      loadState: true,
-      screenRecord: false,
-      gamepad: true,
-      cheat: false,
-      volume: true,
-      saveSavFiles: true,
-      loadSavFiles: true,
-      quickSave: true,
-      quickLoad: true,
+      playPause: true, restart: true, mute: true,
+      settings: true, fullscreen: true,
+      saveState: true, loadState: true,
+      screenRecord: false, gamepad: true,
+      cheat: false, volume: true,
+      saveSavFiles: true, loadSavFiles: true,
+      quickSave: true, quickLoad: true,
     };
 
-    // Callback quando o jogo iniciar — dispara o fix do joystick
-    window.EJS_onGameStart = () => fixGamepad();
-
-    // Injeta o script do EmulatorJS
+    // Injeta loader fresh
     const script = document.createElement('script');
-    script.src = 'https://cdn.emulatorjs.org/latest/data/loader.js';
+    script.src = 'https://cdn.emulatorjs.org/stable/data/loader.js?t=' + Date.now();
     document.body.appendChild(script);
+    emulatorLoaded = true;
   }
 
-  function fixGamepad() {
-    const forceResize = () => window.dispatchEvent(new Event('resize'));
+  // Quando a aba volta ao foco, remonta o emulador do zero
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && emulatorLoaded) {
+      setTimeout(mountEmulator, 100);
+    }
+  });
 
-    // Dispara várias vezes — EmulatorJS recalcula os controles no resize
-    forceResize();
-    setTimeout(forceResize, 200);
-    setTimeout(forceResize, 600);
-    setTimeout(forceResize, 1200);
-
-    // Observa se o joystick some depois (ex: ao sair/entrar fullscreen, trocar guia)
-    const observer = new MutationObserver(() => {
-      const gamepad = document.querySelector('[class*="gamepad"], [class*="Gamepad"], [class*="touch"]');
-      if (gamepad) {
-        const s = window.getComputedStyle(gamepad);
-        if (s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity) === 0) {
-          gamepad.style.cssText += 'display:block!important;visibility:visible!important;opacity:1!important;';
-          forceResize();
-        }
-      }
-    });
-
-    observer.observe(document.getElementById('game-container'), {
-      childList: true, subtree: true,
-      attributes: true, attributeFilter: ['style', 'class']
-    });
-
-    // Re-aplica ao trocar orientação
-    window.addEventListener('orientationchange', () => {
-      setTimeout(forceResize, 300);
-      setTimeout(forceResize, 800);
-    });
-
-    // Re-aplica ao entrar/sair do fullscreen
-    ['fullscreenchange', 'webkitfullscreenchange'].forEach(evt => {
-      document.addEventListener(evt, () => setTimeout(forceResize, 300));
-    });
-
-    // Re-aplica quando a aba volta ao foco (trocar guia e voltar)
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        setTimeout(forceResize, 200);
-        setTimeout(forceResize, 600);
-      }
-    });
-  }
-
-  // Auto-start se vier de NFC (sem interação prévia necessária em alguns browsers)
-  // Alguns browsers bloqueiam autoplay sem gesto — o botão garante compatibilidade
+  // Autoplay via NFC
   window.addEventListener('load', () => {
-    // Se vier via NFC tag com ?autoplay=1, tenta iniciar direto
     if (new URLSearchParams(location.search).get('autoplay') === '1') {
-      // Pequeno delay para o browser processar o gesto da NFC
       setTimeout(() => document.getElementById('startBtn').click(), 300);
     }
   });
